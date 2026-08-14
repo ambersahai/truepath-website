@@ -1,0 +1,25 @@
+# Netlify configuration for True Path Cab Services India
+#
+# This is a static HTML/CSS/JS site (index.html, style.css, config.js) with
+# no framework and no build tool — there is nothing to compile or bundle.
+
+[build]
+  # No real build step exists; this command is a no-op placeholder so
+  # Netlify's build UI has something to run and log.
+  command = "echo 'No build step required — static HTML/CSS/JS site'"
+  publish = "."
+
+# --- SPA redirect rule: intentionally omitted ---
+# This site is a single static page (index.html) with in-page anchor links
+# (#fleet, #packages, #book, etc.) and no client-side router (no React
+# Router / Vue Router / etc.), so there are no alternate routes that need
+# to be rewritten back to index.html. Add a "/*  /index.html  200" redirect
+# here only if the site later adopts client-side routing.
+
+# --- Environment variables: none required today ---
+# Contact details, pricing, and the EmailJS IDs are all read from config.js
+# in the browser at runtime — nothing is injected at build time, so there
+# is nothing to declare under [build.environment] yet. If real secrets
+# (e.g. a production EmailJS key) are later moved out of config.js, a real
+# build step would need to be introduced to inject them from Netlify env
+# vars into a generated file.
