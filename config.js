@@ -124,6 +124,9 @@ window.TRUE_PATH_CONFIG = {
     // change the details.
   ],
 
+  // ---- LOCAL RENTAL PACKAGES (shown in the Local tab's package dropdown)
+  localPackages: ["4HR 40KM","6HR 60KM", "8HR 80KM", "10HR 100KM","12HR 120KM", "WEDDING"],
+
   // ---- PRICING RULES --------------------------------------------------
   discountPercent: 15,        // % shown as an "online discount" off the listed fare
   advancePercent: 20,         // % of the fare collected as advance/booking amount

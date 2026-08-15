@@ -57,31 +57,54 @@
 <div class="booking-wrap wrap" id="book">
   <div class="booking-card">
     <div class="trip-tabs" role="tablist" aria-label="Trip type">
-      <button type="button" class="trip-tab active" data-trip="oneway" role="tab" aria-selected="true">One Way</button>
-      <button type="button" class="trip-tab" data-trip="round" role="tab" aria-selected="false">Round Trip</button>
+      <button type="button" class="trip-tab active" data-trip="outstation" role="tab" aria-selected="true">Outstation</button>
+      <button type="button" class="trip-tab" data-trip="local" role="tab" aria-selected="false">Local</button>
       <button type="button" class="trip-tab" data-trip="airport" role="tab" aria-selected="false">Airport</button>
     </div>
     <form class="booking-form" id="searchForm">
+      <div class="subtoggle" id="outstationToggle">
+        <span class="subtoggle-label">Trip Type</span>
+        <label class="radio-opt"><input type="radio" name="outstationType" value="round" checked> Round Trip</label>
+        <label class="radio-opt"><input type="radio" name="outstationType" value="oneway"> One Way</label>
+      </div>
+
       <div class="field" id="fieldFrom">
-        <label for="searchFrom">From</label>
+        <label for="searchFrom" id="fieldFromLabel">From</label>
         <input type="text" id="searchFrom" required placeholder="Pickup city or location" autocomplete="off">
         <div class="suggestions" id="fromSuggestions"></div>
       </div>
+
       <div class="field" id="fieldTo">
-        <label for="searchTo">To</label>
+        <label for="searchTo" id="fieldToLabel">To</label>
         <input type="text" id="searchTo" required placeholder="Destination city or location" autocomplete="off">
         <div class="suggestions" id="toSuggestions"></div>
       </div>
-      <div class="field">
+
+      <div class="extra-destinations" id="extraDestinations" style="display:none;"></div>
+      <button type="button" class="add-dest-btn" id="addDestinationBtn" style="display:none;">+ Add another destination</button>
+
+      <div class="field" id="fieldLocalPackage" style="display:none;">
+        <label for="localPackage">Package</label>
+        <select id="localPackage"></select>
+      </div>
+
+      <div class="field" id="fieldDate">
         <label for="searchDate" id="searchDateLabel">Pickup Date</label>
         <input type="date" id="searchDate" required>
       </div>
+
+      <div class="field" id="fieldLocalTime" style="display:none;">
+        <label for="localTime">Time</label>
+        <input type="time" id="localTime" value="11:00">
+      </div>
+
       <div class="field">
         <label for="searchVehicle">Car Type</label>
         <select id="searchVehicle">
           <option value="">Any car type</option>
         </select>
       </div>
+
       <button class="search-btn" type="submit">Search Cabs</button>
     </form>
   </div>
@@ -291,12 +314,22 @@
 
   const searchForm = document.getElementById('searchForm');
   const searchFromInput = document.getElementById('searchFrom');
+  const fieldFromLabel = document.getElementById('fieldFromLabel');
   const searchToInput = document.getElementById('searchTo');
+  const fieldTo = document.getElementById('fieldTo');
+  const fieldToLabel = document.getElementById('fieldToLabel');
   const searchDateInput = document.getElementById('searchDate');
   const searchDateLabel = document.getElementById('searchDateLabel');
   const searchVehicleSel = document.getElementById('searchVehicle');
-  const fieldTo = document.getElementById('fieldTo');
   const tripTabs = document.querySelectorAll('.trip-tab');
+  const outstationToggle = document.getElementById('outstationToggle');
+  const outstationRadios = document.querySelectorAll('input[name="outstationType"]');
+  const extraDestinations = document.getElementById('extraDestinations');
+  const addDestinationBtn = document.getElementById('addDestinationBtn');
+  const fieldLocalPackage = document.getElementById('fieldLocalPackage');
+  const localPackageSel = document.getElementById('localPackage');
+  const fieldLocalTime = document.getElementById('fieldLocalTime');
+  const localTimeInput = document.getElementById('localTime');
   const resultsList = document.getElementById('resultsList');
   const resultsTitle = document.getElementById('resultsTitle');
   const bookingFormPanel = document.getElementById('bookingFormPanel');
@@ -304,11 +337,15 @@
   const bookingForm = document.getElementById('bookingEmailForm');
   const bookingStatus = document.getElementById('bookingStatus');
 
-  let tripType = 'oneway';
+  let mainTrip = 'outstation';
+  let outstationType = 'round';
   let selectedBooking = null;
 
   searchVehicleSel.innerHTML = '<option value="">Any car type</option>' +
     TRUE_PATH_CONFIG.fleet.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+
+  localPackageSel.innerHTML = '<option value="" disabled selected>Select package</option>' +
+    (TRUE_PATH_CONFIG.localPackages || []).map(p => `<option value="${p}">${p}</option>`).join('');
 
   document.getElementById('resultsPriceNote').textContent = '* ' + TRUE_PATH_CONFIG.priceNote;
 
@@ -395,37 +432,147 @@
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
-  // Switch between One Way / Round Trip / Airport
+  // ---- Round Trip: multiple destinations ----
+  let destCounter = 0;
+
+  function addDestinationRow(){
+    destCounter++;
+    const row = document.createElement('div');
+    row.className = 'dest-row';
+    row.innerHTML = `
+      <div class="field">
+        <input type="text" placeholder="Additional destination" autocomplete="off">
+        <div class="suggestions"></div>
+      </div>
+      <button type="button" class="remove-dest" aria-label="Remove destination">×</button>
+    `;
+    extraDestinations.appendChild(row);
+    setupCityAutocomplete(row.querySelector('input'), row.querySelector('.suggestions'));
+    row.querySelector('.remove-dest').addEventListener('click', () => row.remove());
+  }
+
+  function clearExtraDestinations(){
+    extraDestinations.innerHTML = '';
+  }
+
+  function getExtraDestinations(){
+    return [...extraDestinations.querySelectorAll('input')].map(i => i.value.trim()).filter(Boolean);
+  }
+
+  addDestinationBtn.addEventListener('click', addDestinationRow);
+
+  // ---- Field visibility per tab / sub-type ----
+  function updateFieldVisibility(){
+    if (mainTrip === 'outstation') {
+      outstationToggle.style.display = 'flex';
+      fieldFromLabel.textContent = 'From';
+      fieldTo.style.display = '';
+      searchToInput.required = true;
+      fieldLocalPackage.style.display = 'none';
+      localPackageSel.required = false;
+      fieldLocalTime.style.display = 'none';
+      searchDateLabel.textContent = 'Pickup Date';
+
+      if (outstationType === 'round') {
+        fieldToLabel.textContent = 'Destination 1';
+        extraDestinations.style.display = 'flex';
+        addDestinationBtn.style.display = '';
+      } else {
+        fieldToLabel.textContent = 'To';
+        extraDestinations.style.display = 'none';
+        addDestinationBtn.style.display = 'none';
+        clearExtraDestinations();
+      }
+    } else if (mainTrip === 'local') {
+      outstationToggle.style.display = 'none';
+      fieldFromLabel.textContent = 'City';
+      fieldTo.style.display = 'none';
+      searchToInput.required = false;
+      extraDestinations.style.display = 'none';
+      addDestinationBtn.style.display = 'none';
+      clearExtraDestinations();
+      fieldLocalPackage.style.display = '';
+      localPackageSel.required = true;
+      fieldLocalTime.style.display = '';
+      searchDateLabel.textContent = 'Travel Date';
+    } else { // airport
+      outstationToggle.style.display = 'none';
+      fieldFromLabel.textContent = 'City (pickup or drop)';
+      fieldTo.style.display = 'none';
+      searchToInput.required = false;
+      extraDestinations.style.display = 'none';
+      addDestinationBtn.style.display = 'none';
+      clearExtraDestinations();
+      fieldLocalPackage.style.display = 'none';
+      localPackageSel.required = false;
+      fieldLocalTime.style.display = 'none';
+      searchDateLabel.textContent = 'Flight Date';
+    }
+  }
+
+  function resetResults(){
+    resultsList.innerHTML = '<div class="empty-state">Enter your trip details above, then click "Search Cabs" to see available cars.</div>';
+    resultsTitle.textContent = 'Available cabs';
+    bookingFormPanel.classList.remove('show');
+  }
+
+  // Clears every trip-specific input so each tab starts with a blank
+  // slate instead of carrying over values typed under a different tab.
+  function resetFormFields(){
+    searchFromInput.value = '';
+    searchToInput.value = '';
+    clearExtraDestinations();
+    localPackageSel.selectedIndex = 0;
+    localTimeInput.value = '11:00';
+    searchVehicleSel.value = '';
+  }
+
   tripTabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tripTabs.forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
       tab.classList.add('active');
       tab.setAttribute('aria-selected', 'true');
-      tripType = tab.dataset.trip;
-
-      if (tripType === 'airport') {
-        fieldTo.style.display = 'none';
-        searchToInput.required = false;
-        document.querySelector('label[for="searchFrom"]').textContent = 'City (pickup or drop)';
-        searchDateLabel.textContent = 'Flight Date';
-      } else {
-        fieldTo.style.display = '';
-        searchToInput.required = true;
-        document.querySelector('label[for="searchFrom"]').textContent = 'From';
-        searchDateLabel.textContent = 'Pickup Date';
-      }
-
-      resultsList.innerHTML = '<div class="empty-state">Enter your pickup and destination above, then click "Search Cabs" to see available cars.</div>';
-      resultsTitle.textContent = 'Available cabs';
-      bookingFormPanel.classList.remove('show');
+      mainTrip = tab.dataset.trip;
+      resetFormFields();
+      updateFieldVisibility();
+      resetResults();
     });
   });
 
+  outstationRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      outstationType = radio.value;
+      updateFieldVisibility();
+      resetResults();
+    });
+  });
+
+  updateFieldVisibility();
+
+  // ---- Trip labels & pricing rules ----
+  // Pricing is shown for Round Trip and Airport, but hidden for One Way and
+  // Local (those fares depend too much on exact distance/hours to quote
+  // upfront on this page).
+  function tripLabelFor(ctx){
+    if (ctx.mainTrip === 'outstation') return ctx.outstationType === 'round' ? 'Outstation – Round Trip' : 'Outstation – One Way';
+    if (ctx.mainTrip === 'local') return 'Local';
+    return 'Airport Transfer';
+  }
+
+  function routeLabelFor(ctx){
+    if (ctx.mainTrip === 'outstation' && ctx.outstationType === 'round') {
+      return `${ctx.from} → ${ctx.destinations.join(' → ')} → ${ctx.from}`;
+    }
+    if (ctx.mainTrip === 'outstation') return `${ctx.from} → ${ctx.to}`;
+    if (ctx.mainTrip === 'local') return `${ctx.from} (${ctx.package}${ctx.time ? ' · ' + ctx.time : ''})`;
+    return `${ctx.from} ⇄ Airport`;
+  }
+
   function openBookingPanel(result){
     selectedBooking = result;
-    const tripLabel = tripType === 'oneway' ? 'One Way' : tripType === 'round' ? 'Round Trip' : 'Airport Transfer';
-    const routeLabel = tripType === 'airport' ? `${result.from} ⇄ Airport` : `${result.from} → ${result.to}`;
-    tripSummary.textContent = `${tripLabel} · ${routeLabel} · ${formatDate(result.date)} · ${result.vehicle.name}`;
+    const { context, showPrice, vehicle } = result;
+    const priceBit = showPrice ? ` · ₹${vehicle.perKm}*/km` : '';
+    tripSummary.textContent = `${tripLabelFor(context)} · ${routeLabelFor(context)} · ${formatDate(context.date)} · ${vehicle.name}${priceBit}`;
     bookingFormPanel.classList.add('show');
     bookingStatus.textContent = '';
     bookingForm.reset();
@@ -436,31 +583,60 @@
     event.preventDefault();
     bookingFormPanel.classList.remove('show');
 
-    const from = searchFromInput.value.trim();
-    const to = tripType === 'airport' ? 'Airport' : searchToInput.value.trim();
     const date = searchDateInput.value;
     const vehicleFilter = searchVehicleSel.value;
+    const from = searchFromInput.value.trim();
+    const context = { mainTrip, outstationType, date, from };
+    let showPrice = true;
 
-    if (tripType !== 'airport' && from.toLowerCase() === to.toLowerCase()) {
-      resultsList.innerHTML = '<div class="empty-state">Pickup and destination must be different.</div>';
-      return;
+    if (mainTrip === 'outstation' && outstationType === 'oneway') {
+      const to = searchToInput.value.trim();
+      if (from.toLowerCase() === to.toLowerCase()) {
+        resultsList.innerHTML = '<div class="empty-state">Pickup and destination must be different.</div>';
+        return;
+      }
+      context.to = to;
+      showPrice = false;
+    } else if (mainTrip === 'outstation' && outstationType === 'round') {
+      const primaryTo = searchToInput.value.trim();
+      const destinations = [primaryTo, ...getExtraDestinations()].filter(Boolean);
+      if (!destinations.length) {
+        resultsList.innerHTML = '<div class="empty-state">Please enter at least one destination.</div>';
+        return;
+      }
+      if (destinations.some(d => d.toLowerCase() === from.toLowerCase())) {
+        resultsList.innerHTML = '<div class="empty-state">A destination can\'t be the same as the pickup city.</div>';
+        return;
+      }
+      context.destinations = destinations;
+      showPrice = true;
+    } else if (mainTrip === 'local') {
+      const pkg = localPackageSel.value;
+      if (!pkg) {
+        resultsList.innerHTML = '<div class="empty-state">Please select a package.</div>';
+        return;
+      }
+      context.package = pkg;
+      context.time = localTimeInput.value;
+      showPrice = false;
+    } else { // airport
+      context.to = 'Airport';
+      showPrice = true;
     }
 
     const fleet = vehicleFilter ? TRUE_PATH_CONFIG.fleet.filter(v => v.name === vehicleFilter) : TRUE_PATH_CONFIG.fleet;
-    const results = fleet.map(vehicle => ({ vehicle, from, to, date }));
+    const results = fleet.map(vehicle => ({ vehicle, context, showPrice }));
 
-    resultsTitle.textContent = tripType === 'airport'
-      ? `${results.length} cabs available for ${from} Airport Transfer`
-      : `${results.length} cabs available from ${from} to ${to}`;
+    resultsTitle.textContent = `${results.length} cabs available — ${routeLabelFor(context)}`;
 
     resultsList.innerHTML = results.map((r, i) => `
-      <div class="cab-row">
+      <div class="cab-row${showPrice ? '' : ' no-rate'}">
         <div class="icon" style="background-image:url('${r.vehicle.image || ''}')">${r.vehicle.image ? '' : (r.vehicle.icon || '')}</div>
         <div>
           <div class="cab-name">${r.vehicle.name} <span class="cab-seats">(${r.vehicle.seats})</span></div>
           <div class="cab-sub">${r.vehicle.tagline}</div>
         </div>
-        <div class="cab-rate">₹${r.vehicle.perKm}*/km</div>
+        ${showPrice ? `<div class="cab-rate">₹${r.vehicle.perKm}*/km</div>` : ''}
         <button class="book-btn" type="button" data-index="${i}">Book</button>
       </div>
     `).join('');
@@ -486,19 +662,20 @@
       return;
     }
 
-    const { from, to, date, vehicle } = selectedBooking;
-    const tripLabel = tripType === 'oneway' ? 'One Way' : tripType === 'round' ? 'Round Trip' : 'Airport Transfer';
-    const routeText = tripType === 'airport' ? `${from} ⇄ Airport` : `${from} to ${to}`;
+    const { context, vehicle, showPrice } = selectedBooking;
+    const tripLabel = tripLabelFor(context);
+    const routeText = routeLabelFor(context);
+    const priceText = showPrice ? ` Rate ₹${vehicle.perKm}*/km.` : '';
 
     const templateParams = {
       booking_name: name,
       booking_phone: phone,
-      booking_from: from,
-      booking_to: to,
+      booking_from: context.from,
+      booking_to: context.destinations ? context.destinations.join(', ') : (context.to || context.package || ''),
       booking_vehicle: vehicle.name,
       booking_type: tripLabel,
-      booking_date: formatDate(date),
-      booking_message: `${tripLabel} booking from ${name} (${phone}): ${routeText} on ${formatDate(date)} in ${vehicle.name}.`
+      booking_date: formatDate(context.date),
+      booking_message: `${tripLabel} booking from ${name} (${phone}): ${routeText} on ${formatDate(context.date)} in ${vehicle.name}.${priceText}`
     };
 
     bookingStatus.textContent = 'Sending booking request...';
