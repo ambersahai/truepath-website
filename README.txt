@@ -3,16 +3,22 @@ TRUE PATH CAB SERVICES INDIA — WEBSITE PACKAGE
 
 WHAT'S IN THIS FOLDER
 ----------------------
-index.html   -> the website itself (structure, content, booking demo)
-style.css    -> all the visual styling (colors, fonts, layout)
-config.js    -> EDIT THIS to change prices, vehicles, phone number,
-                email, or WhatsApp number
-favicon.png  -> the small icon shown in the browser tab
-README.txt   -> this file
+index.html    -> the website itself (structure, content, booking demo)
+style.css     -> all the visual styling (colors, fonts, layout)
+app.js        -> all the interactive behavior (search, booking, etc.)
+config.js     -> EDIT THIS to change prices, vehicles, phone number,
+                 email, or WhatsApp number
+favicon.png   -> the small icon shown in the browser tab
+og-image.jpg  -> the preview image shown when your link is shared on
+                 WhatsApp, Facebook, etc.
+robots.txt    -> tells Google/search engines they're allowed to crawl
+                 the site
+sitemap.xml   -> helps search engines find and index the site
+README.txt    -> this file
 
-index.html, style.css, config.js, and favicon.png must all stay in
-the SAME folder, and keep their exact names, or the site won't load
-properly.
+All of the above files must stay in the SAME folder, and keep their
+exact names, or the site won't load (or won't be found by search
+engines) properly.
 
 
 HOW TO EDIT PRICES / VEHICLES
@@ -37,8 +43,8 @@ HOW TO PUT THIS LIVE FOR FREE (pick ONE option)
 OPTION A — Netlify (easiest, recommended, free)
   1. Go to https://app.netlify.com/drop in your browser.
   2. Create a free account (email or Google login) if asked.
-  3. Drag this ENTIRE FOLDER (with index.html, style.css,
-     config.js, and favicon.png inside it) onto the page.
+  3. Drag this ENTIRE FOLDER (with all the files listed above
+     inside it) onto the page.
   4. Netlify gives you a live link in a few seconds, e.g.
      https://true-path-cabs.netlify.app
   5. To update later: edit config.js, then drag the folder onto
@@ -51,7 +57,7 @@ OPTION A — Netlify (easiest, recommended, free)
 OPTION B — GitHub Pages (free, a little more setup)
   1. Create a free account at https://github.com
   2. Create a new repository (e.g. "truepath-website").
-  3. Upload index.html, style.css, config.js, and favicon.png into it.
+  3. Upload all the files listed above into it.
   4. Go to Settings -> Pages -> set branch to "main" -> Save.
   5. GitHub gives you a link like
      https://yourusername.github.io/truepath-website

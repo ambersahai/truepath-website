@@ -162,6 +162,7 @@
   .results{padding:26px;}
   .results-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
   .results-head h3{font-family:'Work Sans',sans-serif; font-size:15.5px; font-weight:700; text-transform:none; color:var(--ink);}
+  .distance-badge{display:inline-block; background:rgba(201,162,39,0.15); color:var(--gold-dim); font-weight:700; padding:2px 9px; border-radius:6px;}
 
   .cab-row{display:grid; grid-template-columns:70px 1.4fr 1fr auto; gap:14px; align-items:center; border-bottom:1px solid var(--line); padding:16px 4px;}
   .cab-row:last-child{border-bottom:none;}
