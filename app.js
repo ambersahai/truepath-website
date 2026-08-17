@@ -63,6 +63,8 @@
   const fieldToLabel = document.getElementById('fieldToLabel');
   const searchDateInput = document.getElementById('searchDate');
   const searchDateLabel = document.getElementById('searchDateLabel');
+  const searchTimeInput = document.getElementById('searchTime');
+  const searchTimeLabel = document.getElementById('searchTimeLabel');
   const searchVehicleSel = document.getElementById('searchVehicle');
   const tripTabs = document.querySelectorAll('.trip-tab');
   const outstationToggle = document.getElementById('outstationToggle');
@@ -71,8 +73,6 @@
   const addDestinationBtn = document.getElementById('addDestinationBtn');
   const fieldLocalPackage = document.getElementById('fieldLocalPackage');
   const localPackageSel = document.getElementById('localPackage');
-  const fieldLocalTime = document.getElementById('fieldLocalTime');
-  const localTimeInput = document.getElementById('localTime');
   const resultsList = document.getElementById('resultsList');
   const resultsTitle = document.getElementById('resultsTitle');
   const bookingFormPanel = document.getElementById('bookingFormPanel');
@@ -274,6 +274,8 @@
   addDestinationBtn.addEventListener('click', addDestinationRow);
 
   // ---- Field visibility per tab / sub-type ----
+  // Pickup time is shown on every tab (Outstation, Local, Airport) — only
+  // its label changes to fit context.
   function updateFieldVisibility(){
     if (mainTrip === 'outstation') {
       outstationToggle.style.display = 'flex';
@@ -282,8 +284,8 @@
       searchToInput.required = true;
       fieldLocalPackage.style.display = 'none';
       localPackageSel.required = false;
-      fieldLocalTime.style.display = 'none';
       searchDateLabel.textContent = 'Pickup Date';
+      searchTimeLabel.textContent = 'Pickup Time';
 
       if (outstationType === 'round') {
         fieldToLabel.textContent = 'Destination 1';
@@ -305,8 +307,8 @@
       clearExtraDestinations();
       fieldLocalPackage.style.display = '';
       localPackageSel.required = true;
-      fieldLocalTime.style.display = '';
       searchDateLabel.textContent = 'Travel Date';
+      searchTimeLabel.textContent = 'Time';
     } else { // airport
       outstationToggle.style.display = 'none';
       fieldFromLabel.textContent = 'City (pickup or drop)';
@@ -317,8 +319,8 @@
       clearExtraDestinations();
       fieldLocalPackage.style.display = 'none';
       localPackageSel.required = false;
-      fieldLocalTime.style.display = 'none';
       searchDateLabel.textContent = 'Flight Date';
+      searchTimeLabel.textContent = 'Flight Time';
     }
   }
 
@@ -335,7 +337,7 @@
     searchToInput.value = '';
     clearExtraDestinations();
     localPackageSel.selectedIndex = 0;
-    localTimeInput.value = '11:00';
+    searchTimeInput.value = '11:00';
     searchVehicleSel.value = '';
   }
 
@@ -372,12 +374,17 @@
   }
 
   function routeLabelFor(ctx){
+    let base;
     if (ctx.mainTrip === 'outstation' && ctx.outstationType === 'round') {
-      return `${ctx.from} → ${ctx.destinations.join(' → ')} → ${ctx.from}`;
+      base = `${ctx.from} → ${ctx.destinations.join(' → ')} → ${ctx.from}`;
+    } else if (ctx.mainTrip === 'outstation') {
+      base = `${ctx.from} → ${ctx.to}`;
+    } else if (ctx.mainTrip === 'local') {
+      base = `${ctx.from} (${ctx.package})`;
+    } else {
+      base = `${ctx.from} ⇄ Airport`;
     }
-    if (ctx.mainTrip === 'outstation') return `${ctx.from} → ${ctx.to}`;
-    if (ctx.mainTrip === 'local') return `${ctx.from} (${ctx.package}${ctx.time ? ' · ' + ctx.time : ''})`;
-    return `${ctx.from} ⇄ Airport`;
+    return ctx.time ? `${base} · ${ctx.time}` : base;
   }
 
   function openBookingPanel(result){
@@ -403,9 +410,10 @@
     bookingFormPanel.classList.remove('show');
 
     const date = searchDateInput.value;
+    const time = searchTimeInput.value;
     const vehicleFilter = searchVehicleSel.value;
     const from = searchFromInput.value.trim();
-    const context = { mainTrip, outstationType, date, from };
+    const context = { mainTrip, outstationType, date, time, from };
     let showPrice = true;
 
     if (mainTrip === 'outstation' && outstationType === 'oneway') {
@@ -436,7 +444,6 @@
         return;
       }
       context.package = pkg;
-      context.time = localTimeInput.value;
       showPrice = false;
     } else { // airport
       context.to = 'Airport';
@@ -500,6 +507,7 @@
       booking_vehicle: vehicle.name,
       booking_type: tripLabel,
       booking_date: formatDate(context.date),
+      booking_time: context.time || '',
       booking_distance: distanceLabel || '',
       booking_message: `${tripLabel} booking from ${name} (${phone}): ${routeText} on ${formatDate(context.date)} in ${vehicle.name}.${distanceText}${priceText}`
     };
