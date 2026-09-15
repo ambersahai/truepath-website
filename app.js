@@ -92,9 +92,60 @@
 
   document.getElementById('resultsPriceNote').textContent = '* ' + TRUE_PATH_CONFIG.priceNote;
 
-  const todayISO = new Date().toISOString().slice(0, 10);
-  searchDateInput.min = todayISO;
-  searchDateInput.value = todayISO;
+  // ---- Earliest pickup: at least MIN_LEAD_MINUTES from now ----
+  // Capping the date alone still let someone pick a time that had already
+  // passed (06:00 while it's 18:00 today), so the lead time is enforced in
+  // three places: the date input's min, the time input's min while the
+  // earliest day is selected, and a re-check on submit — the last one
+  // matters because a tab left open for hours has a stale min attribute.
+  const MIN_LEAD_MINUTES = 60;
+  const pad2 = n => String(n).padStart(2, '0');
+
+  // Deliberately not toISOString(): that converts to UTC, which rolls the
+  // date back a day for IST users between midnight and 05:30.
+  const localISODate = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const localHHMM = d => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+  // Now + lead time, rounded up to the next 5 minutes so the slot we
+  // suggest reads like a time someone would actually say out loud.
+  function earliestPickup(){
+    const d = new Date(Date.now() + MIN_LEAD_MINUTES * 60000);
+    d.setSeconds(0, 0);
+    const remainder = d.getMinutes() % 5;
+    if (remainder) d.setMinutes(d.getMinutes() + (5 - remainder));
+    return d;
+  }
+
+  // The date and time fields as one point in time, or null if either is blank.
+  function selectedPickup(){
+    if (!searchDateInput.value || !searchTimeInput.value) return null;
+    const [y, m, day] = searchDateInput.value.split('-').map(Number);
+    const [hh, mm] = searchTimeInput.value.split(':').map(Number);
+    if ([y, m, day, hh, mm].some(Number.isNaN)) return null;
+    return new Date(y, m - 1, day, hh, mm, 0, 0);
+  }
+
+  // A time-of-day floor only makes sense on the earliest bookable day; on
+  // any later date every hour is available, so the min is cleared.
+  function applyPickupLimits(){
+    const earliest = earliestPickup();
+    searchDateInput.min = localISODate(earliest);
+    if (searchDateInput.value === searchDateInput.min) {
+      searchTimeInput.min = localHHMM(earliest);
+    } else {
+      searchTimeInput.removeAttribute('min');
+    }
+  }
+
+  function resetPickupToEarliest(){
+    const earliest = earliestPickup();
+    searchDateInput.value = localISODate(earliest);
+    searchTimeInput.value = localHHMM(earliest);
+    applyPickupLimits();
+  }
+
+  resetPickupToEarliest();
+  searchDateInput.addEventListener('change', applyPickupLimits);
 
   // ---- City autocomplete (custom, so it only appears after 3 letters
   // and stays capped in height instead of the native <datalist> dumping
@@ -337,7 +388,7 @@
     searchToInput.value = '';
     clearExtraDestinations();
     localPackageSel.selectedIndex = 0;
-    searchTimeInput.value = '11:00';
+    resetPickupToEarliest();
     searchVehicleSel.value = '';
   }
 
@@ -415,6 +466,23 @@
     const from = searchFromInput.value.trim();
     const context = { mainTrip, outstationType, date, time, from };
     let showPrice = true;
+
+    // Re-checked here rather than trusting the min attributes alone: they
+    // were set when the page loaded, and a tab sitting open for an hour
+    // would happily accept a slot that has since gone stale.
+    const pickup = selectedPickup();
+    const earliest = earliestPickup();
+    if (!pickup) {
+      resultsList.innerHTML = '<div class="empty-state">Please choose a pickup date and time.</div>';
+      return;
+    }
+    if (pickup < earliest) {
+      const sameDay = localISODate(earliest) === localISODate(new Date());
+      const when = `${localHHMM(earliest)} ${sameDay ? 'today' : 'on ' + formatDate(localISODate(earliest))}`;
+      resultsList.innerHTML = `<div class="empty-state">We need at least an hour's notice to send a cab. The earliest pickup we can take is ${when}.</div>`;
+      applyPickupLimits();
+      return;
+    }
 
     if (mainTrip === 'outstation' && outstationType === 'oneway') {
       const to = searchToInput.value.trim();
