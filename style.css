@@ -198,8 +198,12 @@
   /* ---------- TESTIMONIALS ---------- */
   .testi-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:22px;}
   @media (max-width:900px){ .testi-grid{grid-template-columns:1fr;} }
-  .testi{background:#fff; border:1px solid var(--line); border-radius:10px; padding:22px; position:relative;}
-  .testi::before{content:"“"; font-family:'Cinzel',serif; font-size:44px; color:var(--gold-light); position:absolute; top:8px; left:16px; line-height:1;}
+  .testi{background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; display:flex; flex-direction:column;}
+  /* Fixed 4:3 box + object-fit:cover, so portrait and landscape photos all
+     render at exactly the same size instead of stretching their card. */
+  .testi-photo{width:100%; height:auto; aspect-ratio:4/3; object-fit:cover; object-position:center 30%; display:block; background:var(--line); border-bottom:1px solid var(--line);}
+  .testi-body{padding:22px; position:relative; flex:1;}
+  .testi-body::before{content:"“"; font-family:'Cinzel',serif; font-size:44px; color:var(--gold-light); position:absolute; top:8px; left:16px; line-height:1;}
   .testi p{font-size:14.5px; line-height:1.6; color:var(--ink); margin:22px 0 14px;}
   .testi .who{font-size:12.5px; color:var(--gold-dim); font-family:'Roboto Mono',monospace;}
   .testi .stars{color:var(--gold); font-size:14px; letter-spacing:2px; margin-top:6px;}
@@ -220,6 +224,16 @@
   .foot-col h4{color:var(--gold-light); font-family:'Cinzel',serif; font-size:13.5px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:14px;}
   .foot-col a, .foot-col p{display:block; margin-bottom:9px; text-decoration:none; color:rgba(251,246,233,0.6); font-style:normal;}
   .foot-col a:hover{color:var(--gold-light);}
+  /* Footer social / contact icons */
+  .social-row{display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;}
+  /* Scoped through .social-row so these beat the generic `.foot-col a`
+     rule above, which would otherwise force display:block and un-centre
+     the glyphs. */
+  .social-row .social-icon{display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; margin:0;
+    background:rgba(251,246,233,0.07); border:1px solid rgba(251,246,233,0.15); color:rgba(251,246,233,0.75); transition:background .2s ease, border-color .2s ease, color .2s ease;}
+  .social-row .social-icon svg{width:19px; height:19px; display:block;}
+  .social-row .social-icon:hover{background:var(--gold); border-color:var(--gold); color:#0B1913;}
+
   .foot-bottom{padding-top:18px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:12px; color:rgba(251,246,233,0.4);}
 
   /* ---------- WHATSAPP FLOAT ---------- */

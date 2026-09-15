@@ -149,7 +149,7 @@ window.TRUE_PATH_CONFIG = {
     {
       name: "Hatchback",
       seats: "4 seats",
-      tagline: "Economy · Dzire, Etios or similar",
+      tagline: "Economy · WagonR, Dzire, Etios or similar",
       image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRTVf-1600MOkgBImXDgJtZdV3MDz8h-5KbSkiI_3wyCA&s=10",
       perKm: "9-10",      // price per kilometre, in rupees
       base: 250,     // starting/base fare added before per-km cost
